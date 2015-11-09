@@ -1,0 +1,14 @@
+{
+    "manifest_version": 2,
+    
+    "name": "currentTrackOverlay",
+    "description": "currentTrackOverlay",
+    "version": "1.0",
+    
+    "content_scripts": [
+        {
+            "matches": ["http://www.bbc.co.uk/programmes/*", "http://bbc.co.uk/programmes/*"],
+            "js": ["overlay.js"]
+        }
+    ]
+}
