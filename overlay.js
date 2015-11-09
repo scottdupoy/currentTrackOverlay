@@ -44,11 +44,15 @@ function getCurrentPosition(pid) {
     timesString = cookies.ckps_progs_player_resume;
     
     // parse the times as json
+    console.log('times (JSON):');
+    console.log(timesString);
     times = JSON.parse(timesString);
+    console.log('times:');
     console.log(times);
     
     // see if there's a position for this pid
     // TODO: iterate over each one
+    
 }
 
 function getCookies() {
