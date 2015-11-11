@@ -1,32 +1,57 @@
+var pid = null;
+var previousPosition = null;
 
 initialiseOverlay();
 
 function initialiseOverlay() {
-    // DONE: parse url and determine if it's a programme
-    // - check if the page has a track list
-    // - if looks likely then setup a poll on the cookie containing the current position.
-    //    - could do intervals to suspected track positions but it won't pick up manual moves
-    // - poll
-    //    - if the time is moving then display the overlay if it's not displayed already
-    //    - update the overlay current position details:
-    //       - current time
-    //       - current track details
-    
-    console.log('initialising current track overlay');
-    
     // try and get the pid
-    var pid = window.location.pathname.match(/\/programmes\/(.{8})/);
-    if (pid == null) {
+    console.log('Initialising current track overlay');
+    pathnameMatch = window.location.pathname.match(/\/programmes\/(.{8})/);
+    if (pathnameMatch == null) {
         console.log('Could not extract 8 character pid from pathname: ' + window.location.pathname);
         return;
     }
-    pid = pid[1];
-    console.log('pid: ' + pid);
+    pid = pathnameMatch[1];
+    console.log('Identified pid: ' + pid);
     
+    checkPositionPoll();
+}
+
+function checkPositionPoll() {
+    //try {
+        checkPosition();
+    //}
+    //catch (e) {
+    //    console.log('ERROR: Problem while checking position: ' + e);
+    //}
+    setTimeout(checkPositionPoll, 1000);
+}
+
+function checkPosition() {
     // see if the cookie has a position
-    // TODO: set up poll to check the current position. if moving => display overlay
     var currentPosition = getCurrentPosition(pid);
-    console.log('currentPosition: ' + currentPosition);
+    if (currentPosition == null) {
+        console.log('No current position');
+        return;
+    }
+    
+    // TODO: check if this is a new position (may not yet be playing) or if it's a change of a non-null previous position
+    console.log('currentPosition: ' + currentPosition + ' => ' + formatTime(currentPosition) + ' ' + (currentPosition != previousPosition ? 'NEW' : 'SAME'));
+    previousPosition = currentPosition;
+}
+
+function formatTime(time) {
+    hours = Math.floor(time / 3600);
+    minutes = Math.floor((time % 3600) / 60);
+    seconds = Math.floor(time % 60);
+    return padLeft(hours.toString(), 2, '0') + ':' + padLeft(minutes.toString(), 2, '0') + ':' + padLeft(seconds.toString(), 2, '0');
+}
+
+function padLeft(value, length, character) {
+    while (value.length < length) {
+        value = character + value;
+    }
+    return value;
 }
 
 function getCurrentPosition(pid) {
@@ -39,20 +64,36 @@ function getCurrentPosition(pid) {
         return null;
     }
     
-    // get the times
-    console.log('ckps_progs_player_resume cookie is present');
+    // get the times cookie
+    
+    // first try using a direct property (this is how the page starts off)
     timesString = cookies.ckps_progs_player_resume;
+    if (timesString == undefined) {
+        // if it's not accessible by the property directly then try the string lookup (it has a leading space
+        // when set dynamically by the page)
+        timesString = cookies[" ckps_progs_player_resume"];
+        if (timesString == undefined) {
+            console.log('ckps_progs_player_resume cookie is not present');
+            return null;
+        }
+    }
     
     // parse the times as json
-    console.log('times (JSON):');
-    console.log(timesString);
     times = JSON.parse(timesString);
-    console.log('times:');
-    console.log(times);
+    if (times.constructor !== Array) {
+        console.log('ckps_progs_player_resume did not parse as an array');
+        return null;
+    }
     
     // see if there's a position for this pid
-    // TODO: iterate over each one
+    for (var i = 0; i < times.length; i++) {
+        if (times[i].vpid == pid) {
+            return times[i].time;
+        }
+    }
     
+    console.log('No current position found for pid: ' + pid);
+    return null;
 }
 
 function getCookies() {
