@@ -84,6 +84,9 @@ function retrieveJson(url, callback) {
                 console.log('ERROR: Could not parse JSON: ' + e);
             }
         }
+        else if (request.status == 404 && url !== request.responseURL) {
+            retrieveJsonRedirected(url, request.responseURL, callback);
+        }
         else {
             console.log('ERROR: An unknown JSON retrieval error occurred');
         }
@@ -92,4 +95,20 @@ function retrieveJson(url, callback) {
         console.log('ERROR: An unknown JSON retrieval error occurred');
     };
     request.send();
+}
+
+function retrieveJsonRedirected(url, redirectedUrl, callback) {
+    console.log('Response redirected and returned 404, attempting to correct URL');
+    console.log('  url:           ' + url);
+    console.log('  redirectedUrl: ' + redirectedUrl);
+    
+    // try to construct a new URL using the redirected pid
+    var pidMatch = redirectedUrl.match(/^(.*)\/aps(\/programmes\/.{8}\/segments\.json)$/);
+    if (pidMatch == null) {
+        return;
+    }
+    var correctedUrl = pidMatch[1] + pidMatch[2];
+    console.log('  correctedUrl:  ' + correctedUrl);
+    
+    retrieveJson(correctedUrl, callback);
 }
